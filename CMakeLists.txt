@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.8.12)
+project (powermon)
+add_executable(powermon Adc.cpp powermon.cpp)
+set_property(TARGET powermon PROPERTY CXX_STANDARD 11)
+set_property(TARGET powermon PROPERTY CXX_STANDARD_REQUIRED ON)
+target_link_libraries(powermon iio)
