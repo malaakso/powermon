@@ -5,7 +5,7 @@
 #include "Delay.h"
 #include "Meter.h"
 
-#define SAMPLE_RATE 2000 // Hz
+#define SAMPLE_RATE 2100 // Hz
 #define SAMPLES_PER_CYCLE (SAMPLE_RATE / 50) // 50 Hz mains frequency
 #define BURDEN_RESISTANCE 99.5f // Ohms
 #define VOLTAGE_DIVIDER_RATIO 0.138268156f // 9.9 / (61.7 + 9.9)
