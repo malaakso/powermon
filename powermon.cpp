@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             vRMS = Meter::getRMS(
                     boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
                     boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
-            vf = Meter::getFrequency(
+            vf = SAMPLE_RATE * Meter::getFrequency(
                     boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
                     boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
             i1RMS = Meter::getRMS(
