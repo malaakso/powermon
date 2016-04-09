@@ -25,9 +25,10 @@ public:
     class const_iterator: public std::iterator<std::input_iterator_tag, float, ptrdiff_t, const float*, const float&>
     {
     public:
-        explicit const_iterator(char* first, ptrdiff_t step) :
+        explicit const_iterator(char* first, ptrdiff_t step, struct iio_channel* chn) :
             _ptr(first),
             _step(step),
+            _chn(chn),
             _v(NAN)
         {
         }
@@ -56,14 +57,17 @@ public:
             return _ptr != other._ptr;
         }
     protected:
-        const char*     _ptr;
-        ptrdiff_t       _step;
+        const char*         _ptr;
+        ptrdiff_t           _step;
     private:
-        mutable float   _v;
+        struct iio_channel* _chn;
+        mutable float       _v;
         void _update() const
         {
+            uint16_t tmp;
+            iio_channel_convert(_chn, &tmp, _ptr);
             // TODO: Dynamically set these.
-            _v = *((int16_t*) _ptr) * 5000.0 / 4096;
+            _v = tmp * 5000.0 / 4096;
         }
     };
 
