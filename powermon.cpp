@@ -2,11 +2,11 @@
 #include <iostream>
 #include <boost/iterator/transform_iterator.hpp>
 #include "Adc.h"
+#include "Configuration.h"
 #include "Delay.h"
+#include "InfluxdbWriter.h"
 #include "Meter.h"
 
-#define SAMPLE_RATE 2100 // Hz
-#define SAMPLES_PER_CYCLE (SAMPLE_RATE / 50) // 50 Hz mains frequency
 #define BURDEN_RESISTANCE 99.5f // Ohms
 #define VOLTAGE_DIVIDER_RATIO 0.138268156f // 9.9 / (61.7 + 9.9)
 #define CURRENT_TRANSFORMER_RATIO 0.0005f // 50 mA / 100 A
@@ -53,15 +53,30 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    Delay<float> delayL2(SAMPLES_PER_CYCLE / 3), delayL3(2 * SAMPLES_PER_CYCLE / 3);
-
     try
     {
-        GalileoGen2Adc adc(5, SAMPLE_RATE);
+        Configuration conf("/etc/powermon.json");
+        
+        InfluxdbWriter influx(
+                conf.get<std::string>("PowerMonitor.InfluxDB.host"),
+                conf.get<unsigned int>("PowerMonitor.InfluxDB.port"),
+                conf.get<std::string>("PowerMonitor.InfluxDB.database"),
+                conf.get<std::string>("PowerMonitor.InfluxDB.username"),
+                conf.get<std::string>("PowerMonitor.InfluxDB.password"));
+        
+        // 2100 divides evenly with 50 and 3
+        unsigned int sample_rate = conf.get("PowerMonitor.samplerate", 2100);
+        GalileoGen2Adc adc(5, sample_rate);
+        
+        unsigned int mains_freq = conf.get("PowerMonitor.mainsfreq", 50);
+        unsigned int samples_per_cycle = sample_rate / mains_freq;
+        Delay<float> delayL2(samples_per_cycle / 3), delayL3(2 * samples_per_cycle / 3);
 
+        bool print = conf.get("PowerMonitor.print", false);
         float vRMS, vf;
         float i1RMS, i2RMS, i3RMS;
         float p1, p2, p3;
+        float pf1, pf2, pf3;
 
         while (!terminate)
         {
@@ -71,7 +86,7 @@ int main(int argc, char **argv)
             vRMS = Meter::getRMS(
                     boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
                     boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
-            vf = SAMPLE_RATE * Meter::getFrequency(
+            vf = sample_rate * Meter::getFrequency(
                     boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
                     boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
             i1RMS = Meter::getRMS(
@@ -95,10 +110,32 @@ int main(int argc, char **argv)
                     boost::make_transform_iterator(adc.cbegin(L3), voltageToCurrent),
                     boost::make_transform_iterator(adc.cend(L3), voltageToCurrent),
                     boost::make_transform_iterator(boost::make_transform_iterator(adc.cbegin(V), delayL3), voltageToVoltage));
+            pf1 = p1 / (i1RMS * vRMS);
+            pf2 = p2 / (i2RMS * vRMS);
+            pf3 = p3 / (i3RMS * vRMS);
             // Print results
-            std::cout << vRMS << " V " << vf << " Hz\n";
-            std::cout << i1RMS << " A " << i2RMS << " A " << i3RMS << " A\n";
-            std::cout << p1 << " W " << p2 << " W " << p3 << " W\n";
+            if (print)
+            {
+                std::cout << vRMS << " V " << vf << " Hz\n";
+                std::cout << i1RMS << " A " << i2RMS << " A " << i3RMS << " A\n";
+                std::cout << p1 << " W " << p2 << " W " << p3 << " W\n";
+                std::cout << pf1 << " " << pf2 << " " << pf3 << "\n";
+            }
+            // Send results
+            influx.send<float>("voltage",
+                    {
+                        { "voltage", vRMS },
+                        { "frequency", vf }
+                    });
+            influx.send<float>("power",
+                    {
+                        { "l1", p1 },
+                        { "l2", p2 },
+                        { "l3", p3 },
+                        { "pf1", pf1 },
+                        { "pf2", pf2 },
+                        { "pf3", pf3 }
+                    });
         }
     }
     catch (const std::exception& e)
