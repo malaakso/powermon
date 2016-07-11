@@ -10,7 +10,7 @@
 #define BURDEN_RESISTANCE 99.5f // Ohms
 #define VOLTAGE_DIVIDER_RATIO 0.138268156f // 9.9 / (61.7 + 9.9)
 #define CURRENT_TRANSFORMER_RATIO 0.0005f // 50 mA / 100 A
-#define TRANSFORMER_RATIO 0.048869565f // 11.24 V / 230 V
+#define TRANSFORMER_RATIO (0.048869565f * 0.9657f) // 11.24 V / 230 V * calibration factor
 
 // Channel mapping
 #define L1 1
