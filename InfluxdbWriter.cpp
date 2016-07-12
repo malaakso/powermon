@@ -36,8 +36,6 @@ InfluxdbWriter::InfluxdbWriter(const std::string& host, const std::string& db, c
     curl_easy_setopt(_handle, CURLOPT_PASSWORD, password.c_str());
     list = curl_slist_append(list, "Expect:");
     curl_easy_setopt(_handle, CURLOPT_HTTPHEADER, list);
-    curl_multi_add_handle(_multihandle, _handle);
-    curl_multi_perform(_multihandle, &_running);
 }
 
 InfluxdbWriter::~InfluxdbWriter()
