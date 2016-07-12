@@ -58,7 +58,7 @@ void InfluxdbWriter::_doSend()
         }
         _buffer.clear();
         curl_multi_remove_handle(_multihandle, _handle);
-        curl_easy_setopt(_handle, CURLOPT_POSTFIELDS, payload.str().c_str());
+        curl_easy_setopt(_handle, CURLOPT_COPYPOSTFIELDS, payload.str().c_str());
         curl_multi_add_handle(_multihandle, _handle);
         curl_multi_perform(_multihandle, &_running);
     }
