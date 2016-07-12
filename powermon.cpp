@@ -59,7 +59,6 @@ int main(int argc, char **argv)
         
         InfluxdbWriter influx(
                 conf.get<std::string>("PowerMonitor.InfluxDB.host"),
-                conf.get<unsigned int>("PowerMonitor.InfluxDB.port"),
                 conf.get<std::string>("PowerMonitor.InfluxDB.database"),
                 conf.get<std::string>("PowerMonitor.InfluxDB.username"),
                 conf.get<std::string>("PowerMonitor.InfluxDB.password"));

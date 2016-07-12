@@ -3,7 +3,7 @@
 namespace PowerMonitor
 {
 
-InfluxdbWriter::InfluxdbWriter(const std::string& host, unsigned int port, const std::string& db, const std::string& user, const std::string& password) :
+InfluxdbWriter::InfluxdbWriter(const std::string& host, const std::string& db, const std::string& user, const std::string& password) :
         _running(0)
 {
     CURLcode ret;
@@ -29,7 +29,7 @@ InfluxdbWriter::InfluxdbWriter(const std::string& host, unsigned int port, const
     }
 
     std::stringstream url;
-    url << host << ":" << port << "/write?db=" << db;
+    url << host << "/write?db=" << db;
     curl_easy_setopt(_handle, CURLOPT_URL, url.str().c_str());
     curl_easy_setopt(_handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     curl_easy_setopt(_handle, CURLOPT_USERNAME, user.c_str());

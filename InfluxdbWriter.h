@@ -21,7 +21,7 @@ class InfluxdbWriter
 {
 public:
     //! Constructor
-    InfluxdbWriter(const std::string& host, unsigned int port, const std::string& db, const std::string& user, const std::string& password);
+    InfluxdbWriter(const std::string& host, const std::string& db, const std::string& user, const std::string& password);
     //! Destructor
     ~InfluxdbWriter();
     //! Send a measurement to InfluxDB.

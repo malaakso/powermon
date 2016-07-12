@@ -1,8 +1,7 @@
 {
     "PowerMonitor": {
         "InfluxDB": {
-            "host": "http://localhost",
-            "port": 8086,
+            "host": "http://localhost:8086",
             "database": "powermon",
             "username": "username",
             "password": "password"
