@@ -1,4 +1,3 @@
-#include <iostream>
 #include "InfluxdbWriter.h"
 
 namespace PowerMonitor
@@ -30,8 +29,11 @@ InfluxdbWriter::InfluxdbWriter(const std::string& host, unsigned int port, const
     }
 
     std::stringstream url;
-    url << "http://" << host << ":" << port << "/write?db=" << db << "&u=" << user << "&p=" << password;
+    url << host << ":" << port << "/write?db=" << db;
     curl_easy_setopt(_handle, CURLOPT_URL, url.str().c_str());
+    curl_easy_setopt(_handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    curl_easy_setopt(_handle, CURLOPT_USERNAME, user.c_str());
+    curl_easy_setopt(_handle, CURLOPT_PASSWORD, password.c_str());
     list = curl_slist_append(list, "Expect:");
     curl_easy_setopt(_handle, CURLOPT_HTTPHEADER, list);
     curl_multi_add_handle(_multihandle, _handle);
