@@ -1,9 +1,11 @@
 #include <csignal>
 #include <iostream>
+#include <vector>
 #include <boost/iterator/transform_iterator.hpp>
 #include "Adc.h"
 #include "Configuration.h"
 #include "Delay.h"
+#include "HighPassFilter.h"
 #include "InfluxdbWriter.h"
 #include "Meter.h"
 
@@ -70,6 +72,9 @@ int main(int argc, char **argv)
         unsigned int mains_freq = conf.get("PowerMonitor.mainsfreq", 50);
         unsigned int samples_per_cycle = sample_rate / mains_freq;
         Delay<float> delayL2(samples_per_cycle / 3), delayL3(2 * samples_per_cycle / 3);
+        HighPassFilter<float> hpfV(1.f / sample_rate, 1.f), hpfL1(1.f / sample_rate, 1.f);
+        HighPassFilter<float> hpfL2(1.f / sample_rate, 1.f), hpfL3(1.f / sample_rate, 1.f);
+        std::vector<float> v(sample_rate), l1(sample_rate), l2(sample_rate), l3(sample_rate);
 
         bool print = conf.get("PowerMonitor.print", false);
         float vRMS, vf;
@@ -81,34 +86,42 @@ int main(int argc, char **argv)
         {
             // Read ADC
             adc.refill();
+            // Copy and transform data
+            auto itV = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage), hpfV);
+            auto itL1 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cbegin(L1), voltageToCurrent), hpfL1);
+            auto itL2 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cbegin(L2), voltageToCurrent), hpfL2);
+            auto itL3 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cbegin(L3), voltageToCurrent), hpfL3);
+            auto endV = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cend(V), voltageToVoltage), hpfV);
+            auto endL1 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cend(L1), voltageToCurrent), hpfL1);
+            auto endL2 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cend(L2), voltageToCurrent), hpfL2);
+            auto endL3 = boost::make_transform_iterator(
+                boost::make_transform_iterator(adc.cend(L3), voltageToCurrent), hpfL3);
+            for(auto it = v.begin(); itV != endV; ++itV, ++it)
+                *it = *itV;
+            for(auto it = l1.begin(); itL1 != endL1; ++itL1, ++it)
+                *it = *itL1;
+            for(auto it = l2.begin(); itL2 != endL2; ++itL2, ++it)
+                *it = *itL2;
+            for(auto it = l3.begin(); itL3 != endL3; ++itL3, ++it)
+                *it = *itL3;
             // Perform calculations
-            vRMS = Meter::getRMS(
-                    boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
-                    boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
-            vf = sample_rate * Meter::getFrequency(
-                    boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage),
-                    boost::make_transform_iterator(adc.cend(V), voltageToVoltage));
-            i1RMS = Meter::getRMS(
-                    boost::make_transform_iterator(adc.cbegin(L1), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L1), voltageToCurrent));
-            i2RMS = Meter::getRMS(
-                    boost::make_transform_iterator(adc.cbegin(L2), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L2), voltageToCurrent));
-            i3RMS = Meter::getRMS(
-                    boost::make_transform_iterator(adc.cbegin(L3), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L3), voltageToCurrent));
-            p1 = Meter::getAveragePower(
-                    boost::make_transform_iterator(adc.cbegin(L1), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L1), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cbegin(V), voltageToVoltage));
-            p2 = Meter::getAveragePower(
-                    boost::make_transform_iterator(adc.cbegin(L2), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L2), voltageToCurrent),
-                    boost::make_transform_iterator(boost::make_transform_iterator(adc.cbegin(V), delayL2), voltageToVoltage));
-            p3 = Meter::getAveragePower(
-                    boost::make_transform_iterator(adc.cbegin(L3), voltageToCurrent),
-                    boost::make_transform_iterator(adc.cend(L3), voltageToCurrent),
-                    boost::make_transform_iterator(boost::make_transform_iterator(adc.cbegin(V), delayL3), voltageToVoltage));
+            vRMS = Meter::getRMS(v.cbegin(), v.cend());
+            vf = sample_rate * Meter::getFrequency(v.cbegin(), v.cend());
+            i1RMS = Meter::getRMS(l1.cbegin(), l1.cend());
+            i2RMS = Meter::getRMS(l2.cbegin(), l2.cend());
+            i3RMS = Meter::getRMS(l3.cbegin(), l3.cend());
+            p1 = Meter::getAveragePower(l1.cbegin(), l1.cend(), v.cbegin());
+            p2 = Meter::getAveragePower(l2.cbegin(), l2.cend(),
+                    boost::make_transform_iterator(v.cbegin(), delayL2));
+            p3 = Meter::getAveragePower(l3.cbegin(), l3.cend(),
+                    boost::make_transform_iterator(v.cbegin(), delayL3));
             pf1 = p1 / (i1RMS * vRMS);
             pf2 = p2 / (i2RMS * vRMS);
             pf3 = p3 / (i3RMS * vRMS);
