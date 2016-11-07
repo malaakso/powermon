@@ -8,7 +8,6 @@
 #ifndef ADC_H_
 #define ADC_H_
 
-#include <cmath>
 #include <iterator>
 #include <iio.h>
 
@@ -28,14 +27,15 @@ public:
         explicit const_iterator(char* first, ptrdiff_t step, struct iio_channel* chn) :
             _ptr(first),
             _step(step),
-            _chn(chn),
-            _v(NAN)
+            _chn(chn)
         {
         }
-        reference operator*() const
+        value_type operator*() const
         {
-            _update();
-            return _v;
+            uint16_t tmp;
+            iio_channel_convert(_chn, &tmp, _ptr);
+            // TODO: Dynamically set these.
+            return tmp * 5000.0 / 4096;
         }
         const_iterator& operator++()
         {
@@ -61,14 +61,6 @@ public:
         ptrdiff_t           _step;
     private:
         struct iio_channel* _chn;
-        mutable float       _v;
-        void _update() const
-        {
-            uint16_t tmp;
-            iio_channel_convert(_chn, &tmp, _ptr);
-            // TODO: Dynamically set these.
-            _v = tmp * 5000.0 / 4096;
-        }
     };
 
     const_iterator cbegin(unsigned int channel) const;
