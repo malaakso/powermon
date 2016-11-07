@@ -28,13 +28,13 @@ static void sighandler(int signum)
     terminate = 1;
 }
 
-float voltageToVoltage(const float& v)
+float voltageToVoltage(float v)
 {
     // Millivolts from ADC to mains voltage in volts.
     return (v - 2500.f) / 1000.f / VOLTAGE_DIVIDER_RATIO / TRANSFORMER_RATIO;
 }
 
-float voltageToCurrent(const float& v)
+float voltageToCurrent(float v)
 {
     // Millivolts from ADC to mains current in amperes.
     return (v - 2500.f) / 1000.f / BURDEN_RESISTANCE / CURRENT_TRANSFORMER_RATIO;
