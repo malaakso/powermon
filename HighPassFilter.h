@@ -24,7 +24,7 @@ public:
     {
     }
 
-    T operator()(T sample)
+    T operator()(const T& sample) const
     {
         if (!_initialized)
         {
@@ -41,9 +41,9 @@ public:
 
 private:
     T _alpha;               //!< Filter coefficient.
-    T _previousSample;      //!< Previous sample.
-    T _previousResult;      //!< Previous filtered sample.
-    bool _initialized;      //!< Previous samples initialized?
+    mutable T _previousSample;      //!< Previous sample.
+    mutable T _previousResult;      //!< Previous filtered sample.
+    mutable bool _initialized;      //!< Previous samples initialized?
 };
 
 }
