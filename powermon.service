@@ -1,0 +1,9 @@
+[Unit]
+Description=Electric power monitoring
+
+[Service]
+ExecStartPre=-/bin/sh -c "echo 0 > /sys/bus/iio/devices/iio_hrtimer_trigger/add_trigger"
+ExecStart=/usr/sbin/powermon
+
+[Install]
+WantedBy=multi-user.target
