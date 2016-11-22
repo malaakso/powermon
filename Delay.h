@@ -34,7 +34,7 @@ public:
     //! Delays signal.
     //! \param sample next sample in the signal.
     //! \return Delayed sample.
-    T operator()(const T& sample) const
+    T operator()(const T sample)
     {
         T value = _buffer.front();
         _buffer.pop();
@@ -42,7 +42,7 @@ public:
         return value;
     }
 private:
-    mutable std::queue<T> _buffer; //!< Buffer to hold the delayed values.
+    std::queue<T> _buffer; //!< Buffer to hold the delayed values.
 };
 
 } /* namespace PowerMonitor */
