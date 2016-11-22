@@ -99,11 +99,12 @@ GalileoGen2Adc::const_iterator GalileoGen2Adc::cend(unsigned int channel) const
     {
         throw std::runtime_error("Invalid channel index.");
     }
+    char* start = (char*) iio_buffer_start(_adcbuf);
     char* ptr = (char*) iio_buffer_first(_adcbuf, chn);
     char* end = (char*) iio_buffer_end(_adcbuf);
-    while (ptr < end)
-        ptr += iio_buffer_step(_adcbuf);
-    return const_iterator(ptr, iio_buffer_step(_adcbuf), chn);
+    ptrdiff_t distance = end - start;
+    
+    return const_iterator(ptr + distance, iio_buffer_step(_adcbuf), chn);
 }
 
 }
